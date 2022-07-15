@@ -1,14 +1,14 @@
 const { Sequelize } = require('sequelize');
-const sequelize = new Sequelize('pensamentosdb', 'root', 'root',{
+const sequelize = new Sequelize('pensamentosdb', 'root', '', {
     host: 'localhost',
     dialect: 'mysql'
 })
 
-try{
+try {
     sequelize.authenticate();
-    console.log('Autenticado com sucesso');
-} catch(err){
+    console.log('Conectado com o banco PENSAMENTOSDB');
+} catch (err) {
     console.log(`Não foi possivel conectar: ${err}`)
 }
 
-module.exports = sequelize
+module.exports = sequelize;
