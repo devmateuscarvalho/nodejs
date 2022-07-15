@@ -7,7 +7,7 @@ const flash = require('express-flash');
 const app = express();
 
 const conn = require('./db/conn')
-
+dadsadasdas
 conn
 .sync()
 .then(()=>{
