@@ -1,12 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const userRoutes = require("./routes/userRoutes")
 
 const app = express();
 require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", userRoutes)
 
 const uri = "mongodb+srv://mateuscarvalho:RB0k01HPB6l5tnkW@cluster0.ltqaz.mongodb.net/chat?retryWrites=true&w=majority";
 mongoose.connect(uri, {
