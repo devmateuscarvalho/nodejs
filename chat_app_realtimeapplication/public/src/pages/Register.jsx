@@ -5,10 +5,17 @@ import { useNavigate, Link } from "react-router-dom";
 import Logo from "../assets/logo.svg";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { registerRoute } from "../utils/APIRoutes";
 
-
-
-function Register() {
+export default function Register() {
+  const navigate = useNavigate();
+  const toastOptions = {
+    position: "bottom-right",
+    autoClose: 8000,
+    pauseOnHover: true,
+    draggable: true,
+    theme: "dark",
+  };
   const [values, setValues] = useState({
     username: "",
     email: "",
@@ -16,21 +23,14 @@ function Register() {
     confirmPassword: "",
   });
 
-  const toastOptions = {
-    position: "bottom-right",
-    autoClose: 8000,
-    pauseOnHover: true,
-    draggable: true,
-    theme: "colored",
-  };
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-   if(handleValidation()){
-    const { password, confirmPassword, username, email } = values;
-    const {data} = await axios.post(registerRoute,{
-        username, email, password,
-    })
-   };
+  useEffect(() => {
+    if (localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)) {
+      navigate("/");
+    }
+  }, []);
+
+  const handleChange = (event) => {
+    setValues({ ...values, [event.target.name]: event.target.value });
   };
 
   const handleValidation = () => {
@@ -60,15 +60,34 @@ function Register() {
 
     return true;
   };
-  
-  const handleChange = (event) => {
-    setValues({ ...values, [event.target.name]: event.target.value });
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (handleValidation()) {
+      const { email, username, password } = values;
+      const { data } = await axios.post(registerRoute, {
+        username,
+        email,
+        password,
+      });
+
+      if (data.status === false) {
+        toast.error(data.msg, toastOptions);
+      }
+      if (data.status === true) {
+        localStorage.setItem(
+          process.env.REACT_APP_LOCALHOST_KEY,
+          JSON.stringify(data.user)
+        );
+        navigate("/");
+      }
+    }
   };
 
   return (
     <>
       <FormContainer>
-        <form onSubmit={(event) => handleSubmit(event)}>
+        <form action="" onSubmit={(event) => handleSubmit(event)}>
           <div className="brand">
             <img src={Logo} alt="logo" />
             <h1>snappy</h1>
@@ -99,7 +118,7 @@ function Register() {
           />
           <button type="submit">Create User</button>
           <span>
-            Already have an account? <Link to="/login">Login</Link>
+            Already have an account ? <Link to="/login">Login.</Link>
           </span>
         </form>
       </FormContainer>
@@ -107,7 +126,6 @@ function Register() {
     </>
   );
 }
-import { registerRoute } from "../utils/APIRoutes";
 
 const FormContainer = styled.div`
   height: 100vh;
@@ -131,6 +149,7 @@ const FormContainer = styled.div`
       text-transform: uppercase;
     }
   }
+
   form {
     display: flex;
     flex-direction: column;
@@ -176,5 +195,3 @@ const FormContainer = styled.div`
     }
   }
 `;
-
-export default Register;
