@@ -15,6 +15,23 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.status(200).json({ msg: "Bem vindo a nossa api!" });
 });
+//Register User
+app.post("/auth/register", async (req, res) => {
+  const { name, email, password, confirmPassword } = req.body;
+
+  //Validations
+  if (!name) {
+    return res.status(422).json({ msg: "O nome obrigatório!" });
+  }
+  if (!email) {
+    return res.status(422).json({ msg: "O email obrigatório!" });
+  }
+  if (!password) {
+    return res.status(422).json({ msg: "A senha é obrigatória!" });
+  }
+  if (password !== confirmPassword) {
+    return res.status(422).json({ msg: "As senhas não conferem!" });
+  }
 
 //Private Route
 app.get("/user/:id", checkToken, async (req, res) => {
@@ -43,23 +60,7 @@ function checkToken(req, res, next) {
   }
 }
 
-//Register User
-app.post("/auth/register", async (req, res) => {
-  const { name, email, password, confirmPassword } = req.body;
 
-  //Validations
-  if (!name) {
-    return res.status(422).json({ msg: "O nome obrigatório!" });
-  }
-  if (!email) {
-    return res.status(422).json({ msg: "O email obrigatório!" });
-  }
-  if (!password) {
-    return res.status(422).json({ msg: "A senha é obrigatória!" });
-  }
-  if (password !== confirmPassword) {
-    return res.status(422).json({ msg: "As senhas não conferem!" });
-  }
 
   //Check if user exists
   const userExists = await User.findOne({ email: email });
