@@ -1,3 +1,5 @@
+
+
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -6,137 +8,142 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 
-//Models
+// models
 const User = require("./src/models/User");
-//Config JSON Response
+
+// Config JSON response
 app.use(express.json());
 
-//Open Route - Public Route
+// Open Route
 app.get("/", (req, res) => {
-  res.status(200).json({ msg: "Bem vindo a nossa api!" });
+  res.status(200).json({ msg: "Bem vindo a API!" });
 });
-//Register User
-app.post("/auth/register", async (req, res) => {
-  const { name, email, password, confirmPassword } = req.body;
 
-  //Validations
-  if (!name) {
-    return res.status(422).json({ msg: "O nome obrigatório!" });
-  }
-  if (!email) {
-    return res.status(422).json({ msg: "O email obrigatório!" });
-  }
-  if (!password) {
-    return res.status(422).json({ msg: "A senha é obrigatória!" });
-  }
-  if (password !== confirmPassword) {
-    return res.status(422).json({ msg: "As senhas não conferem!" });
-  }
-
-//Private Route
+// Private Route
 app.get("/user/:id", checkToken, async (req, res) => {
   const id = req.params.id;
-  //check if user exists
+
+  // check if user exists
   const user = await User.findById(id, "-password");
+
   if (!user) {
     return res.status(404).json({ msg: "Usuário não encontrado!" });
   }
+
   res.status(200).json({ user });
 });
 
-//Check Token
 function checkToken(req, res, next) {
-  const authHeader = req.headers["autorization"];
+  const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ msg: "Acesso negado!" });
-  }
+
+  if (!token) return res.status(401).json({ msg: "Acesso negado!" });
+
   try {
     const secret = process.env.SECRET;
+
     jwt.verify(token, secret);
+
     next();
   } catch (err) {
-    res.status(400).json({ msg: "Token inválido!" });
+    res.status(400).json({ msg: "O Token é inválido!" });
   }
 }
 
+app.post("/auth/register", async (req, res) => {
+  const { name, email, password, confirmpassword } = req.body;
 
-
-  //Check if user exists
-  const userExists = await User.findOne({ email: email });
-  if (userExists) {
-    return res
-      .status(422)
-      .json({ msg: `Por favor ${name}, utilize outro e-mail` });
+  // validations
+  if (!name) {
+    return res.status(422).json({ msg: "O nome é obrigatório!" });
   }
 
-  //Create Password
-  const salt = await bcrypt.genSalt(12);
+  if (!email) {
+    return res.status(422).json({ msg: "O email é obrigatório!" });
+  }
+
+  if (!password) {
+    return res.status(422).json({ msg: "A senha é obrigatória!" });
+  }
+
+  if (password != confirmpassword) {
+    return res
+      .status(422)
+      .json({ msg: "A senha e a confirmação precisam ser iguais!" });
+  }
+
+  // check if user exists
+  const userExists = await User.findOne({ email: email });
+
+  if (userExists) {
+    return res.status(422).json({ msg: "Por favor, utilize outro e-mail!" });
+  }
+
+  // create password
+  const salt = await bcrypt.genSalt(8);
   const passwordHash = await bcrypt.hash(password, salt);
 
-  //Create User
+  // create user
   const user = new User({
     name,
     email,
-    password: passwordHash,
+    passwordHash,
   });
+
   try {
     await user.save();
     res.status(201).json({ msg: "Usuário criado com sucesso!" });
   } catch (error) {
-    res.status(500).json({
-      msg: "Aconteceu um erro no servidor, tente novamente mais tarde!",
-    });
+    res.status(500).json({ msg: error });
   }
 });
 
-// Login User
 app.post("/auth/login", async (req, res) => {
   const { email, password } = req.body;
-  // Validations
+
+  // validations
   if (!email) {
-    return res.status(422).json({ msg: "O email obrigatório!" });
+    return res.status(422).json({ msg: "O email é obrigatório!" });
   }
+
   if (!password) {
     return res.status(422).json({ msg: "A senha é obrigatória!" });
   }
-  // Check if user exists
+
+  // check if user exists
   const user = await User.findOne({ email: email });
+
   if (!user) {
-    return res.status(404).json({ msg: `Usuário não encontrado` });
+    return res.status(404).json({ msg: "Usuário não encontrado!" });
   }
 
-  //Check if password match
-  const checkPassword = await bcrypt.compare(password, user.password);
+  // check if password match
+  const checkPassword = await bcrypt.compare(password, user.passwordHash);
+
   if (!checkPassword) {
-    return res.status(422).json({ msg: `Senha inválida` });
+    return res.status(422).json({ msg: "Senha inválida" });
   }
-  try {
-    const secret = process.env.SECRET;
-    const token = jwt.sign(
-      {
-        id: user._id,
-      },
-      secret
-    );
-    res.status(200).json({ msg: "Autenticação realizada com sucesso!", token });
-  } catch (err) {
-    res.status(500).json({
-      msg: "Aconteceu um erro no servidor, tente novamente mais tarde!",
-    });
+  try{
+    const secret = process.env.SECRET
+    const token = jwt.sign({
+      id: user._id,
+    }, secret)
+    res.status(200).json({msg: "Autenticação com Token realizada com sucesso", token})
+  } catch(err){
+    console.log(err)
   }
+  
 });
 
-//Credencials
 const dbUser = process.env.DB_USER;
 const dbPassword = process.env.DB_PASS;
 
 mongoose
   .connect(
-    `mongodb+srv://${dbUser}:${dbPassword}@cluster0.ltqaz.mongodb.net/?retryWrites=true&w=majority`
+    `mongodb+srv://${dbUser}:${dbPassword}@cluster0.ltqaz.mongodb.net/Auth_node_jwt?retryWrites=true&w=majority`
   )
   .then(() => {
+    console.log("Conectou ao banco!");
     app.listen(3000);
-    console.log("Conectado ao MongoDb!");
   })
   .catch((err) => console.log(err));
